@@ -1,10 +1,10 @@
 import torch
 
 class BaseLayer(torch.nn.Module):
-    def __init__(self, in_features, out_features):
+    def forward(self, x):
         raise NotImplementedError
     
-    def forward(self, x):
+    def resize(self, new_dim):
         raise NotImplementedError
     
     def flops(self):
