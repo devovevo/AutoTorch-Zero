@@ -1,46 +1,64 @@
 import torch
-from OpLayers.OpLayer import OpLayer
 
-class MatMul(OpLayer):
-  def __init__(self, dim):
-    super().__init__()
+from SimpleLayer import Simple
 
-    self.A = torch.nn.Parameter(torch.randn(dim, dim))
+class LinearResize(Simple):
+  def __init__(self, in_dim, out_dim, A=None):
+    Simple.__init__(self, in_dim)
 
-  def forward(self, x):
-    return torch.matmul(self.A, x)
-  
-  def resize(self, new_dim):
-    self.dim = new_dim
-    new_A = torch.nn.Parameter(torch.empty(new_dim, new_dim))
+    self.in_dim = in_dim
+    self.out_dim = out_dim
 
-    overlap = min(self.dim, new_dim)
-    new_A.data[:overlap, :overlap] = self.A.data[:overlap, :overlap]
-    new_A.data[:overlap, overlap:] = torch.randn(overlap, new_dim - overlap)
-
-    self.A = new_A
-
-  def flops(self):
-    return 2 * self.dim ** 2
-  
-class AddBias(OpLayer):
-  def __init__(self, dim):
-    super().__init__()
-
-    self.b = torch.nn.Parameter(torch.randn(dim))
+    if A is None:
+      self.A = torch.nn.Parameter(torch.randn(in_dim, out_dim))
+    else:
+      self.A = torch.nn.Parameter(A)
 
   def forward(self, x):
-    return x + self.b
+    return torch.matmul(x, self.A[:x.shape[1], :])
   
-  def resize(self, new_dim):
-    self.dim = new_dim
-    new_b = torch.nn.Parameter(torch.empty(new_dim))
-
-    overlap = min(self.dim, new_dim)
-    new_b.data[:overlap] = self.b.data[:overlap]
-    new_b.data[overlap:] = torch.randn(new_dim - overlap)
-
-    self.b = new_b
-
   def flops(self):
-    return self.dim
+    return self.in_dim * self.out_dim
+  
+  def copy(self, weights=False):
+    if weights:
+      return LinearResize(self.in_dim, self.out_dim, self.A.clone().detach().requires_grad_(True))
+    else:
+      return LinearResize(self.in_dim, self.out_dim)
+  
+  def extra_repr(self):
+    return f"in_dim={self.in_dim}, out_dim={self.out_dim}, A={self.A.detach().numpy()}"
+
+class Linear(LinearResize):
+  def __init__(self, dim, A=None):
+    LinearResize.__init__(self, dim, dim, A)
+
+  def forward(self, x):
+    return torch.matmul(x, self.A[:x.shape[1], :x.shape[1]])
+
+  def copy(self, weights=False):
+    if weights:
+      return Linear(self.dim, self.A.clone().detach().requires_grad_(True))
+    else:
+      return Linear(self.dim)
+  
+class AddBias(Simple):
+  def __init__(self, dim, b=None):
+    Simple.__init__(self, dim)
+
+    if b is None:
+      self.b = torch.nn.Parameter(torch.randn(dim))
+    else:
+      self.b = torch.nn.Parameter(b)
+
+  def forward(self, x):
+    return x + self.b[:x.shape[1]]
+  
+  def copy(self, weights=False):
+    if weights:
+      return AddBias(self.dim, self.b.clone().detach().requires_grad_(True))
+    else:
+      return AddBias(self.dim)
+  
+  def extra_repr(self):
+    return f"dim={self.dim}, b={self.b.detach().numpy()}"

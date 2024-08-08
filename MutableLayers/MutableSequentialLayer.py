@@ -12,11 +12,11 @@ class MutableSequential(Sequential, Mutable):
             if cur_index == index:
                 match action:
                     case "insert":
-                        self.layers.insert(i, new_layer)
+                        self.layers.insert(i, new_layer(self.dim))
                     case "remove":
                         self.layers.pop(i)
                     case "replace":
-                        self.layers[i] = new_layer
+                        self.layers[i] = new_layer(self.dim)
                 break
             elif cur_index < index and cur_index + layer.num_layers() > index and isinstance(layer, Mutable):
                 index_within = index - cur_index - 1
@@ -42,5 +42,5 @@ class MutableSequential(Sequential, Mutable):
     def replace_layer(self, index, layer):
         self.apply_to_layer('replace', index, layer)
 
-    def copy(self):
-        return MutableSequential(self.dim, [layer.copy() for layer in self.layers])
+    def copy(self, weights=False):
+        return MutableSequential(self.dim, [layer.copy(weights) for layer in self.layers])

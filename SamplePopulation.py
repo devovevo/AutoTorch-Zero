@@ -63,7 +63,14 @@ class CompoundSamplePopulation(SamplePopulation):
         self.stats = torch.ones((self.max_pop, 2)) * torch.inf
 
     def gen_paths(self):
-        return torch.stack([torch.randint(len(self.supernet.compound_layers), size=(len(self.supernet.layers),))] + [torch.randperm(len(self.supernet.layers)) for _ in range(self.supernet.max_depth)], axis=1)
+        paths = torch.empty(size=(len(self.supernet.layers) * len(self.supernet.compound_layers), self.supernet.path_length), dtype=torch.int64)
+        layer_perms = super().gen_paths()
+
+        for l in torch.arange(start=0, end=len(self.supernet.compound_layers) * len(self.supernet.layers), step=len(self.supernet.layers)):
+            paths[l:l + len(self.supernet.layers), 0] = torch.ones(len(self.supernet.layers)) * l // len(self.supernet.layers)
+            paths[l:l + len(self.supernet.layers), 1:] = layer_perms
+
+        return paths
 
     def mutate_path(self, path):
         rand_index = torch.randint(high=len(path), size=())
@@ -75,7 +82,7 @@ class CompoundSamplePopulation(SamplePopulation):
 
 class ChainSamplePopulation(CompoundSamplePopulation):
     def initialize_randomly(self):
-        self.pool = torch.empty((self.max_pop, self.supernet.chain_length * (self.supernet.max_depth + 1) + 1), dtype=torch.int64)
+        self.pool = torch.empty((self.max_pop, self.supernet.chain_length * (self.supernet.max_depth + 1)), dtype=torch.int64)
 
         for c in range(self.supernet.chain_length):
             self.pool[:, c * (self.supernet.max_depth + 1)] = torch.randint(0, len(self.supernet.compound_layers), size=(self.max_pop,))

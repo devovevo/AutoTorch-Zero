@@ -1,42 +1,56 @@
 import torch
+import numpy as np
 
-from CompoundLayers.SequentialLayer import Sequential
+from tqdm import tqdm
 
-class EvolvedNN(Sequential):
-    def __init__(self, dim, layers=[], optimizer=None, lr=0.001, loss=torch.nn.MSELoss()):
-        super().__init__(dim, layers)
+from MutableLayers.MutableResizeLayers import MutableSequential
 
-        self.lr = lr
-        if optimizer is None:
-            self.optimizer = torch.optim.AdamW(self.layers.parameters(), lr=lr)
+from OpLayers.AffineLayers import LinearResize
 
-        self.loss = loss
+from TrainableLayer import Trainable
 
-    def train(self, x, y, epochs=100, batch_size=32):
-        for epoch in range(epochs):
-            for i in range(0, len(x), batch_size):
-                x_batch = x[i:i + batch_size]
-                y_batch = y[i:i + batch_size]
+class EvolvedNN(MutableSequential, Trainable):
+    def __init__(self, in_dim, out_dim, layers=[], lr=0.001, loss_fn=torch.nn.MSELoss(), last=None):
+        MutableSequential.__init__(self, in_dim, layers)
 
-                self.optimizer.zero_grad()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
 
-                self.loss = self.loss(self(x_batch), y_batch)
-                self.loss.backward()
-                
-                self.optimizer.step()
+        self.last = LinearResize(in_dim, out_dim) if last is None else last
+
+        Trainable.__init__(self, lr=lr, loss_fn=loss_fn)
+
+    def forward(self, x):
+        x = super().forward(x)
+
+        return self.last.forward(x)
+    
+    mutations = ['insert', 'remove', 'replace']
+    
+    def mutate(self, layers, p=[0.4, 0.2, 0.4]):
+        mutation = np.random.choice(EvolvedNN.mutations, p=p)
+        index = torch.randint(self.num_layers(), (1,)).item()
+
+        match mutation:
+            case 'insert':
+                layer = layers[torch.randint(len(layers), (1,)).item()]
+                self.insert_layer(index, layer)
+            case 'remove':
+                self.remove_layer(index)
+            case 'replace':
+                layer = layers[torch.randint(len(layers), (1,)).item()]
+                self.replace_layer(index, layer)
+
+        lr_update = torch.abs(torch.randn(1) * 0.2 + 1).item()
+        self.lr = self.lr * lr_update
+
+        self.optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr)
+
+    def flops(self):
+        return super().flops() + self.last.flops()
     
     def num_layers(self):
-        return super().num_layers()
-    
-    def mutate(self, layers, p_add=0.2, p_remove=0.4, p_replace=0.4):
-        num_layers = self.num_layers()
+        return super().num_layers() + 1
 
-        if num_layers == 0:
-            return
-
-        index = torch.randint(num_layers, (1,)).item()
-        cur_index = 0
-
-        for layer in self.layers:
-            if cur_index == index:
-                
+    def copy(self, weights=False):
+        return EvolvedNN(self.in_dim, self.out_dim, super().copy(weights).layers, self.lr, self.loss_fn, last=self.last.copy(weights))

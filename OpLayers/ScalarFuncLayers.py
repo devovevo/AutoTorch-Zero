@@ -1,28 +1,30 @@
 import torch
-from OpLayers.OpLayer import OpLayer
 
-class Exp(OpLayer):
-    def __init__(self, dim):
-        super().__init__()
+from SimpleLayer import Simple
 
+class Exp(Simple):
     def forward(self, x):
         return torch.exp(x)
     
-    def resize(self, new_dim):
-        self.dim = new_dim
-    
-    def flops(self):
-        return self.in_features
-
-class Reciprocal(OpLayer):
-    def __init__(self, dim):
-        super().__init__()
-
+class Log(Simple):
     def forward(self, x):
-        return torch.reciprocal(x)
+        return torch.log(x)
     
-    def resize(self, new_dim):
-        self.dim = new_dim
+class Reciprocal(Simple):
+    def forward(self, x):
+        return 1 / x
+    
+class Identity(Simple):
+    def forward(self, x):
+        return x
     
     def flops(self):
-        return self.in_features
+        return 0
+    
+class Abs(Simple):
+    def forward(self, x):
+        return torch.abs(x)
+    
+class Sin(Simple):
+    def forward(self, x):
+        return torch.sin(x)

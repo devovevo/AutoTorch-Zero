@@ -16,7 +16,7 @@ class SampleChain(Base, Sample):
         self.out_dim = out_dim
 
         self.max_depth = depth
-        self.path_length = chain_length * (depth + 1) + 1
+        self.path_length = chain_length * (depth + 1)
 
         self.layers = layers
         self.compound_layers = compound_layers
@@ -36,6 +36,16 @@ class SampleChain(Base, Sample):
             self.last = LinearResize(in_dim, out_dim)
 
         Sample.__init__(self, lr, loss_fn)
+
+    def freeze_chain(self):
+        for param in self.chain.parameters():
+            param.requires_grad = False
+
+    def add_chain_links(self, num_links):
+        self.chain.extend([SampleCompound(self.dim, self.max_dim, self.max_depth, self.layers, self.compound_layers, self.grid) for _ in range(num_links)])
+        self.chain_length += num_links
+
+        self.optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr)
 
     def forward(self, path, x):
         for c in torch.arange(start=0, end=self.chain_length, step=1):

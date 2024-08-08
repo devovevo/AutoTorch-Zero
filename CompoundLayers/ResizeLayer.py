@@ -60,3 +60,11 @@ class ResizeFive(ResizeAmount):
 class ResizeFifth(ResizeAmount):
     def __init__(self, in_dim, latent_layers=[], first=None, last=None):
         ResizeAmount.__init__(self, in_dim, max(in_dim // 5, 1), in_dim, latent_layers, first, last)
+
+class ResizeTwo(ResizeAmount):
+    def __init__(self, in_dim, latent_layers=[], first=None, last=None):
+        ResizeAmount.__init__(self, in_dim, in_dim * 2, in_dim, latent_layers, first, last)
+
+class ResizeHalf(ResizeAmount):
+    def __init__(self, in_dim, latent_layers=[], first=None, last=None):
+        ResizeAmount.__init__(self, in_dim, max(in_dim // 2, 1), in_dim, latent_layers, first, last)

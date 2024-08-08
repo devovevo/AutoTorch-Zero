@@ -8,22 +8,25 @@ class Trainable():
         self.lr = lr
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
 
-    def train_dataloader(self, dataloader, epochs=100, device=torch.device('cpu'), path=None):
+    def train_dataloader(self, dataloader, epochs=100, device=torch.device('cpu'), paths=None):
         for epoch in tqdm(range(epochs), desc='Training'):
             for i, data in enumerate(dataloader):
                 inputs, labels = data
 
                 self.optimizer.zero_grad()
 
-                if path is None:
-                    pred = self.forward(inputs.to(device))
-                else:
-                    pred = self.forward(path, inputs.to(device))
-                
-                loss = self.loss_fn(pred, labels.to(device))
+                preds = []
 
-                if pred.requires_grad:
-                    loss.backward()
+                if paths is None:
+                    preds.append(self.forward(inputs.to(device)))
+                else:
+                    for path in paths:
+                        preds.append(self.forward(path, inputs.to(device)))
+                
+                for pred in preds:
+                    if pred.requires_grad:
+                        loss = self.loss_fn(pred, labels.to(device))
+                        loss.backward()
 
                 try:
                     torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0, error_if_nonfinite=True)
@@ -31,7 +34,7 @@ class Trainable():
                 except RuntimeError:
                     continue
 
-    def train_dataset(self, x_train, y_train, epochs=100, batch_size=32, path=None):
+    def train_dataset(self, x_train, y_train, epochs=100, batch_size=32, paths=None):
         for epoch in tqdm(range(epochs), desc='Training'):
             for i in range(0, len(x_train), batch_size):
                 inputs = x_train[i:i+batch_size]
@@ -39,15 +42,18 @@ class Trainable():
 
                 self.optimizer.zero_grad()
 
-                if path is None:
-                    pred = self.forward(inputs)
-                else:
-                    pred = self.forward(path, inputs)
-                
-                loss = self.loss_fn(pred, labels)
+                preds = []
 
-                if pred.requires_grad:
-                    loss.backward()
+                if paths is None:
+                    preds.append(self.forward(inputs))
+                else:
+                    for path in paths:
+                        preds.append(self.forward(path, inputs))
+
+                for pred in preds:
+                    if pred.requires_grad:
+                        loss = self.loss_fn(pred, labels)
+                        loss.backward()
 
                 try:
                     torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0, error_if_nonfinite=True)

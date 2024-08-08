@@ -1,10 +1,15 @@
 import torch
 
-from BaseLayer import BaseLayer
+from BaseLayer import Base
 
-class Sequential(BaseLayer):
+from OpLayers.ScalarFuncLayers import Identity
+
+class Sequential(Base):
     def __init__(self, dim, layers=[]):
-        super().__init__(dim)
+        Base.__init__(self, dim)
+
+        if layers == []:
+            layers = [Identity(dim)]
 
         self.layers = torch.nn.ModuleList(layers)
 
@@ -18,3 +23,6 @@ class Sequential(BaseLayer):
     
     def num_layers(self):
         return sum(layer.num_layers() for layer in self.layers)
+    
+    def copy(self, weights=False):
+        return Sequential(self.dim, [layer.copy(weights) for layer in self.layers])

@@ -1,29 +1,11 @@
 import torch
 
-from BaseLayer import BaseLayer
+from SimpleLayer import Simple
     
-class Mean(BaseLayer):
-    def __init__(self, dim):
-        super().__init__(dim)
-
+class Mean(Simple):
     def forward(self, x):
-        return torch.mean(x, dim=0)
-
-    def flops(self):
-        return self.dim
+        return torch.ones_like(x) * torch.mean(x, dim=0, keepdim=True)
     
-    def num_layers(self):
-        return 1
-    
-class Variance(BaseLayer):
-    def __init__(self, dim):
-        super().__init__(dim)
-
+class Variance(Simple):
     def forward(self, x):
-        return torch.var(x, dim=0)
-
-    def flops(self):
-        return self.dim
-    
-    def num_layers(self):
-        return 1
+        return torch.ones_like(x) * torch.var(x, dim=0, keepdim=True)

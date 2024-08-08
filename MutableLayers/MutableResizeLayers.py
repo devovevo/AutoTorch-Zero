@@ -43,3 +43,11 @@ class MutableResizeFive(MutableResizeAmount):
 class MutableResizeFifth(MutableResizeAmount):
     def __init__(self, in_dim, latent_layers=[], first=None, last=None):
         MutableResizeAmount.__init__(self, in_dim, max(in_dim // 5, 1), in_dim, latent_layers, first, last)
+
+class MutableResizeTwo(MutableResizeAmount):
+    def __init__(self, in_dim, latent_layers=[], first=None, last=None):
+        MutableResizeAmount.__init__(self, in_dim, in_dim * 2, in_dim, latent_layers, first, last)
+    
+class MutableResizeHalf(MutableResizeAmount):
+    def __init__(self, in_dim, latent_layers=[], first=None, last=None):
+        MutableResizeAmount.__init__(self, in_dim, max(in_dim // 2, 1), in_dim, latent_layers, first, last)

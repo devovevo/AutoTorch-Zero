@@ -43,3 +43,11 @@ class SampleResizeFive(SampleResize):
 class SampleResizeFifth(SampleResize):
     def __init__(self, in_dim, max_depth, layers, grid=None, lr=0.001, loss_fn = torch.nn.MSELoss()):
         super().__init__(in_dim, max(in_dim // 5, 1), in_dim, max_depth, layers, grid, lr, loss_fn)
+
+class SampleResizeTwo(SampleResize):
+    def __init__(self, in_dim, max_depth, layers, grid=None, lr=0.001, loss_fn = torch.nn.MSELoss(),):
+        super().__init__(in_dim, in_dim * 2, in_dim, max_depth, layers, grid, lr, loss_fn)
+
+class SampleResizeHalf(SampleResize):
+    def __init__(self, in_dim, max_depth, layers, grid=None, lr=0.001, loss_fn = torch.nn.MSELoss()):
+        super().__init__(in_dim, max(in_dim // 2, 1), in_dim, max_depth, layers, grid, lr, loss_fn)
